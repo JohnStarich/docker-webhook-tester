@@ -3,6 +3,7 @@
 
 from __future__ import print_function
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import ssl
 
 
 class Server(BaseHTTPRequestHandler):
@@ -17,21 +18,37 @@ class Server(BaseHTTPRequestHandler):
         lines = self.rfile.read(length)
         print(lines)
 
+if __name__ == '__main__':
+    import argparse
 
-def run(server_class=HTTPServer, handler_class=Server, port=80):
-    server_address = ('', port)
-    httpd = server_class(server_address, handler_class)
-    print('Starting httpd...')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, default=80,
+                        help='Port to listen on')
+    parser.add_argument('-s', '--ssl', action='store_true',
+                        help='Enable https')
+    parser.add_argument('-k', '--key-file',
+                        help='Set the key file to use for server identity')
+    parser.add_argument('-c', '--cert-file',
+                        help='Set the cert file to use for server identity')
+
+    args = parser.parse_args()
+    server_address = ('', args.port)
+    httpd = HTTPServer(server_address, Server)
+    if args.ssl is True:
+        httpd.socket = ssl.wrap_socket(
+            httpd.socket,
+            certfile=args.cert_file,
+            keyfile=args.key_file,
+            server_side=(args.cert_file is not None),
+        )
+    elif args.cert_file is not None or args.key_file is not None:
+        raise Exception('Certificates or keys were specified, '
+                        'but ssl not enabled')
+    print('Starting server (port={port}, ssl={ssl})'.format(
+        port=args.port,
+        ssl=args.ssl,
+    ))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
-
-
-if __name__ == '__main__':
-    from sys import argv
-
-    if len(argv) == 2:
-        run(port=int(argv[1]))
-    else:
-        run()
