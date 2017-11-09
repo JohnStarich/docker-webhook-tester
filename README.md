@@ -1,2 +1,3 @@
-# docker-webhook-tester
-Simpler webhook tester for Docker and Kubernetes
+# Webhook Tester
+
+Simple webhook tester for Docker and Kubernetes
