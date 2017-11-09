@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: webhooktest
+  name: webhooktest
+spec:
+  selector:
+    app: webhooktest
+  ports:
+  - name: webhook-http
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+    protocol: TCP
+  - name: webhook-https
+    port: 443
+    targetPort: 443
+    nodePort: 30443
+    protocol: TCP
+  type: NodePort
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: webhooktest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhooktest
+  template:
+    metadata:
+      name: webhooktest
+      labels:
+        app: webhooktest
+    spec:
+      containers:
+      - name: webhooktest-http
+        image: johnstarich/webhook-tester
+        imagePullPolicy: "Always"
+        args: ["--port=80"]
+      - name: webhooktest-https
+        image: johnstarich/webhook-tester
+        imagePullPolicy: "Always"
+        args: ["--port=443", "--ssl"]
+        env:
+          - name: DOMAIN
+            value: "*.mybluemix.net"
